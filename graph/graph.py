@@ -200,7 +200,6 @@ class RandomGraph:
         else:
             return nx.number_connected_components(self.graph)
 
-    
     def random_layout(self, G, center=None, dim=2, seed=None):
         """Position nodes uniformly at random in the unit square.
 
