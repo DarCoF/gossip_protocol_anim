@@ -1,6 +1,7 @@
-import argparse
-import sys
 import logging
+from threads.thread_manager import ThreadManager
+from parser.parser import parse_args
+
 
 # Configure the root logger
 logger = logging.basicConfig(
@@ -8,41 +9,7 @@ logger = logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-
-def positive_integer(value):
-    ivalue = int(value)
-    if ivalue < 0:
-        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
-    return ivalue
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Select fanout and msg repetitions per node.")
-    parser.add_argument("-n",
-                        "--nodes",
-                        required=True,
-                        type=lambda fn: positive_integer(fn),
-                        help="Number of nodes in the graph, V")
-    parser.add_argument("-e",
-                        "--edges",
-                        required=True,
-                        type=lambda fn: positive_integer(fn),
-                        help="Number of edges in the graph, E.")
-    parser.add_argument("-f",
-                        "--fanout",
-                        required=True,
-                        type=lambda fn: positive_integer(fn),
-                        help="Select fanout (number of forwarding nodes)")
-    parser.add_argument("-r",
-                        "--repetitions",
-                        required=True,
-                        type=lambda fn: positive_integer(fn),
-                        help="Number of times the same message is sent by a single node.")
-    
-    # Parse arguments before further validation
-    args = parser.parse_args()
-
-    return args
-
+# Parse arguments and seed system.
 args = parse_args()
 
 
@@ -67,3 +34,16 @@ args = parse_args()
 # instantiates new node with msg and state
 
 # Time to update the anim
+
+
+
+
+# Example usage:
+gossiper_dict = {
+    'node1': ('SUSCEPTIBLE', 'Hello World 1', 3, 5, 'state_file_1.json'),
+    'node2': ('SUSCEPTIBLE', 'Hello World 2', 3, 5, 'state_file_2.json'),
+    # Add more nodes as needed
+}
+
+thread_manager = ThreadManager(gossiper_dict)
+thread_manager.start_event_loop()

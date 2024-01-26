@@ -7,14 +7,15 @@ import os
 gossiper_states = ['SUSCEPTIBLE', 'INFECTED', 'REMOVED']
 
 class Gossiper:
-    def __init__(self, id: int, state: str, message: str, fanout: int , repetitions: int, state_file: str) -> None:
+    def __init__(self, node_id: int, state: str, message: str, fanout: int , repetitions: int, state_file: str, msg_queue):
         self.logger = logging.getLogger(__name__)
         self.lock = threading.Lock()
         self.state_file = state_file
+        self.msg_queue = msg_queue
         if os.path.exists(self.state_file) and os.path.getsize(self.state_file) > 0:
             self._load_state()
         else:
-            self.id = id
+            self.node_id = node_id
             self.state = state
             self.message = message
             self.fanout = fanout
@@ -53,12 +54,13 @@ class Gossiper:
     def _retrieve_fanout_nodes(self):
         """A simple method that contacts Middleservice and retrieves a set of susceptible nodes.
         """
+        # TODO: calls middleware.random_node_selection() and return a list of target node ids
         pass
     
     def _serialize(self, target_id):
         """Encapsulates a message with its corresponding source and target nodes.
         """
-        return (self.message, self.id, target_id)
+        return (self.message, self.node_id, target_id)
 
     def send_message(self, target_id):
         """Broadcasts the gossiper's message to a single node.
@@ -67,8 +69,9 @@ class Gossiper:
         with self.lock:
             # Existing message sending logic goes here
             # After sending a message, persist the state
+            self.msg_queue.put(message)
             self._persist_state()
-            self.logger.info("Message sent and state persisted.")
+        self.logger.info(f"Gossiper {self.node_id} added message to queue and persisted state")
 
     def udpate_state(self, new_state):
         """Swaps node state from the list of potential states under two conditions:
@@ -96,7 +99,7 @@ class Gossiper:
             self._persist_state()
             self.logger.info("Repetition count lowered.")
 
-    def run(self) -> None:
+    def run(self):
         """Main function to trigger gossiper function per event cycle.
         """
         fanout_node_ids = self._retrieve_fanout_nodes()
@@ -108,3 +111,5 @@ class Gossiper:
 
         if self.repetitions == 0:
             self.udpate_state(gossiper_states[2])
+        
+        self.logger.info(f"Gossiper {self.node_id} finished running")
