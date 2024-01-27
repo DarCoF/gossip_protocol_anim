@@ -7,47 +7,29 @@ import os
 gossiper_states = ['SUSCEPTIBLE', 'INFECTED', 'REMOVED']
 
 class Gossiper:
-    def __init__(self, node_id: int, state: str, message: str, fanout: int , repetitions: int, state_file: str, msg_queue):
+    def __init__(self, node_id: int, state: str, message: str, fanout: int , repetitions: int, state_filepath: str, msg_queue):
         self.logger = logging.getLogger(__name__)
         self.lock = threading.Lock()
-        self.state_file = state_file
+        self.state_filepath = state_filepath
         self.msg_queue = msg_queue
-        if os.path.exists(self.state_file) and os.path.getsize(self.state_file) > 0:
-            self._load_state()
-        else:
-            self.node_id = node_id
-            self.state = state
-            self.message = message
-            self.fanout = fanout
-            self.repetitions = repetitions
-            self._persist_state()
-        
-    def _load_state(self):
-        """Load the gossiper's state from a file."""
-        with self.lock:
-            try:
-                with open(self.state_file, 'r') as file:
-                    data = json.load(file)
-                    self.state = data['state']
-                    self.message = data['message']
-                    self.fanout = data['fanout']
-                    self.repetitions = data['repetitions']
-                self.logger.info(f"State loaded from {self.state_file}")
-            except IOError as e:
-                self.logger.error(f"Failed to load state: {e}")
+        self.node_id = node_id
+        self.state = state
+        self.message = message
+        self.fanout = fanout
+        self.repetitions = repetitions
     
     def _persist_state(self):
         """Save the gossiper's state to a file."""
         with self.lock:
             try:
-                with open(self.state_file, 'w') as file:
+                with open(self.state_filepathpath, 'w') as file:
                     json.dump({
                         'state': self.state,
                         'message': self.message,
                         'fanout': self.fanout,
                         'repetitions': self.repetitions
                     }, file)
-                self.logger.info(f"State persisted to {self.state_file}")
+                self.logger.info(f"State persisted to {self.state_filepath}")
             except IOError as e:
                 self.logger.error(f"Failed to persist state: {e}")
     

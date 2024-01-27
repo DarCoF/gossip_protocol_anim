@@ -27,7 +27,7 @@ class Node(Circle):
     def __init__(self,
         radius: float = 0.06,
         fill_color: Color = ORANGE,
-        fill_opacity: float = 0.5,
+        fill_opacity: float = 0.65,
         stroke_color: Color = "#B03608",
         stroke_width: float = 1,
         stroke_opacity: float = 1,
@@ -54,6 +54,7 @@ class Graph2D(Scene):
         self._n_nodes = n_nodes
         self._n_edges = n_edges
         self.random_graph = RandomGraph(n_nodes, n_edges, is_directed)
+        self.adjacency_list = self.random_graph.adjacency_list
         self.logger = logging.getLogger(__name__)
 
         if len(self.random_graph.get_nodes) > 0:
@@ -94,9 +95,9 @@ class Graph2D(Scene):
             for i, mask in zip(self.node_ids, diff_nodes):
                 if mask == 1:
                     if cache_nodes[i] == NODE_STATUS[1]:
-                        node_animation.append(AnimationGroup(self.nodes_2s[i].animate.set_fill(color=GREEN, opacity=1), self.nodes_2s[i].animate.set_stroke(color="#013220", opacity=1)))
+                        node_animation.append(self.nodes_2s[i].animate.set_style(fill_color=GREEN, fill_opacity=0.65, stroke_color ="#013220" , stroke_opacity=1))
                     else: 
-                        node_animation.append(AnimationGroup(self.nodes_2s[i].animate.set_fill(color=GREY, opacity=1), self.nodes_2s[i].animate.set_stroke(color="#343d46", opacity=1)))
+                        node_animation.append(self.nodes_2s[i].animate.set_style(fill_color=GREY, fill_opacity=0.65, stroke_color = "#343d46", stroke_opacity = 1))
             self.play(AnimationGroup(*node_animation))
             cache_nodes = self.node_status.copy()
             self.logger.info(f"Finish updating nodes!")   
@@ -115,11 +116,13 @@ class Graph2D(Scene):
             self.is_new_graph = False
         else:
             if self.is_first:
-                redraw = self._update_graph()
-                redraw()
+                self.redraw = self._update_graph()
+                self.redraw()
                 self.is_first = False
+                self.wait(2)
             else:
-                redraw()
+                self.redraw()
+                self.wait(2)
 
 
 
@@ -132,4 +135,29 @@ if __name__ == "__main__":
     edges = 400
     print('Number of nodes {} and number of edges {}'.format(nodes, edges))
     scene = Graph2D(n_nodes=nodes, n_edges=edges, is_directed=False)
+    scene.construct()
+
+    node_status = scene.node_status
+    node_status[0] = 'INFECTED'
+    node_status[7] = 'INFECTED'
+    node_status[15] = 'INFECTED'
+    node_status[20] = 'INFECTED'
+    node_status[100] = 'INFECTED'
+    node_status[23] = 'INFECTED'
+    node_status[199] = 'INFECTED'
+    node_status[10] = 'INFECTED'
+    node_status[63] = 'INFECTED'
+    node_status[150] = 'INFECTED'
+
+    scene.update_node_status(node_status)
+    scene.construct()
+
+    node_status = scene.node_status
+    node_status[10] = 'REMOVED'
+    node_status[63] = 'REMOVED'
+    node_status[150] = 'REMOVED'
+
+    scene.update_node_status(node_status)
+    scene.construct()
+
     scene.render(preview=True)

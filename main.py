@@ -1,7 +1,22 @@
 import logging
 from threads.thread_manager import ThreadManager
 from parser.parser import parse_args
+from gossip.gossiper import Gossiper
+from middleware.p2p_service import *
+from anim.proyectile import Projectile
+from anim.graph_anim import Graph2D
+import random
+from manim import *
+from middleware.p2p_service import P2PService
+from utils.utils import ordered_list_from_dict
+import queue
+import time
 
+# Some render configs
+config.pixel_height = 1080  # Set the pixel height of the output video 2160
+config.pixel_width = 1920  # Set the pixel width of the output video 3840
+config.media_dir = "F:\\TheRabbitHole\\VlogDeUnNerd\\animations-code\\video-15"
+config.disable_caching = True
 
 # Configure the root logger
 logger = logging.basicConfig(
@@ -12,38 +27,48 @@ logger = logging.basicConfig(
 # Parse arguments and seed system.
 args = parse_args()
 
+message_queue = queue.Queue()
 
-# pseudo code
-# event loop
+# Helper function
+def is_susceptible(node_status):
+    if 'SUSCEPTIBLE' in node_status:
+        return True
+    else:
+        return False
 
-# loop trough list of infected nodes
-# IDEA: maybe spin up a thread for each available node. Common data space is  queue of messages to process by the middleservice.
+if __name__ == "__main__":
+    # Instantiate starting graph
+    graph = Graph2D(args.nodes, args.edges)
+    # Bring middleware alive! Wake up princess.
+    middleservice = P2PService(graph=graph, filepath='./', message_queue=message_queue)
+    # Instantiate original gossiper
+    message = 'Pim!!!'
+    seed = Gossiper(node_id= random.choice(graph.node_ids), message=message, fanout=args.fanout, repetitions=args.repetitions)
+    # Draw starting graph
+    graph.construct()
+    # State file persisted by OG gossiper. Dump to dict and pass to redraw graph
+    middleservice.update()
+    # Update graph with original gossiper
+    graph.update_node_status(ordered_list_from_dict(middleservice.state_file['gossipers']))
+    # Redraw graph
+    graph.construct()
 
-# Each thread
-# for node_i contact middleware and select f (fanout) forwarding nodes (select susceptible nodes only)
-# node_i create message packagef and synchronize in data space
-# lower repetition count
-# if repetition count == 0: change node state to removed and send update to middleware service
+    # Start event loop -> GOSSIP PROTOCOL starts here!!!
 
-# Middlewware service instantiates new gossipers with msg and states and updates dictionary of gossipers (state and instance)
-# while queue not empty of msgs:
-# if source infected or removed: skip msg (it's been contacted by another node)
-# else:
-# access graph and return position of newly infected node
-# update node state list
-# instantiates new node with msg and state
+    while is_susceptible(graph.node_status):
+        # Bring threadmanager
+        thread_manager = ThreadManager(middleservice.state_file['gossipers'], middleservice.state_file_path, message_queue)
+        thread_manager.start_event_loop()
 
-# Time to update the anim
+        time.sleep(2)
 
+        middleservice.read_queue()
 
+        node_status_i = ordered_list_from_dict(middleservice.state_file['gossipers'])
 
+        # Update graph
+        graph.update_node_status(node_status_i)
+        graph.construct()
+    
 
-# Example usage:
-gossiper_dict = {
-    'node1': ('SUSCEPTIBLE', 'Hello World 1', 3, 5, 'state_file_1.json'),
-    'node2': ('SUSCEPTIBLE', 'Hello World 2', 3, 5, 'state_file_2.json'),
-    # Add more nodes as needed
-}
-
-thread_manager = ThreadManager(gossiper_dict)
-thread_manager.start_event_loop()
+    graph.render(preview=True)

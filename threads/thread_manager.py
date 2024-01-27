@@ -5,17 +5,18 @@ import logging
 
 
 
-def thread_function(node_id, gossiper_params, message_queue):
+def thread_function(node_id, gossiper_params, state_filepath, message_queue):
     logging.info(f"Thread {node_id} started")
-    gossiper = Gossiper(*gossiper_params, message_queue, node_id)
+    gossiper = Gossiper(node_id=node_id, *gossiper_params, state_filepath = state_filepath, msg_queue=message_queue)
     gossiper.run()
     logging.info(f"Thread {node_id} finished")
 
 class ThreadManager:
-    def __init__(self, gossiper_dict, message_queue):
+    def __init__(self, gossiper_dict, state_filepath, message_queue):
         self.gossiper_dict = gossiper_dict
         self.logger = logging.getLogger('ThreadManager')
         self.msg_queue = message_queue
+        self.state_filepath = state_filepath
 
     def start_event_loop(self):
         self.logger.info("Starting event loop")
@@ -23,7 +24,7 @@ class ThreadManager:
             while True:
                 threads = []
                 for node_id, gossiper_params in self.gossiper_dict.items():
-                    thread = threading.Thread(target=thread_function, args=(node_id, gossiper_params, self.msg_queue))
+                    thread = threading.Thread(target=thread_function, args=(node_id, gossiper_params, self.state_filepath, self.msg_queue))
                     thread.start()
                     threads.append(thread)
                     self.logger.info(f"Thread {thread.name} for node {node_id} started")
