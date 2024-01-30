@@ -1,7 +1,9 @@
 import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
 
+sys.setrecursionlimit(10000)
 
 def _process_params(center, dim):
     # Some boilerplate code.
@@ -82,7 +84,7 @@ class RandomGraph:
         Return a string representation of the PlainGraph object.
         """
         graph_type = "Directed" if self.is_directed else "Undirected"
-        return f"Random Snap Graph ({graph_type}): Nodes={self.n_nodes}, Edges={self.n_edges}"
+        return f"Random NX Graph ({graph_type}): Nodes={self.n_nodes}, Edges={self.n_edges}"
 
     def set_nodes(self):
         """
@@ -123,7 +125,7 @@ class RandomGraph:
                 print(f"edge: ({u}, {v})")
         return self.edges
 
-    def create_adjacency_list(self):
+    def _create_adjacency_list(self):
         """
         Create an adjacency list from the edges data.
 
@@ -141,18 +143,18 @@ class RandomGraph:
         return adjacency_list
 
     @property
-    def get_adjacency_list(self):
+    def adjacency_list(self):
         """
         Get the adjacency list for the graph.
 
         Returns:
         - list of lists: An adjacency list where each index indicates a vertex, and the item is a list of adjacent vertices.
         """
-        if not hasattr(self, 'adjacency_list'):
-            self.adjacency_list = self.create_adjacency_list()
+        #if not hasattr(self, 'adjacency_list'):
+        adjacency_list = self._create_adjacency_list()
         if self.verbose:
-            print(f"Adjacency list for the graph: {self.adjacency_list}")
-        return self.adjacency_list
+            print(f"Adjacency list for the graph: {adjacency_list}")
+        return adjacency_list
 
 
     def get_degree_distribution(self):
@@ -269,8 +271,6 @@ class RandomGraph:
 
 if __name__ == "__main__" :
     random_graph = RandomGraph(n_nodes=30, n_edges=100, verbose=True, is_directed=False)
-    random_graph.plot_graph()
-    random_graph.save_graph_txt()
-    print(random_graph.random_layout())
+    random_graph.adjacency_list
 
     

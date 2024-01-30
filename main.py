@@ -40,14 +40,14 @@ if __name__ == "__main__":
     # Instantiate starting graph
     graph = Graph2D(args.nodes, args.edges)
     # Bring middleware alive! Wake up princess.
-    middleservice = P2PService(graph=graph, filepath='./', message_queue=message_queue)
+    middleservice = P2PService(graph, './', message_queue, args.fanout, args.repetitions)
     # Instantiate original gossiper
     message = 'Pim!!!'
     seed = Gossiper(node_id= random.choice(graph.node_ids), message=message, fanout=args.fanout, repetitions=args.repetitions)
     # Draw starting graph
     graph.construct()
     # State file persisted by OG gossiper. Dump to dict and pass to redraw graph
-    middleservice.update()
+    middleservice.update_state_file(seed.node_id, message)
     # Update graph with original gossiper
     graph.update_node_status(ordered_list_from_dict(middleservice.state_file['gossipers']))
     # Redraw graph
@@ -69,6 +69,5 @@ if __name__ == "__main__":
         # Update graph
         graph.update_node_status(node_status_i)
         graph.construct()
-    
 
     graph.render(preview=True)

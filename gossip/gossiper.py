@@ -7,7 +7,7 @@ import os
 gossiper_states = ['SUSCEPTIBLE', 'INFECTED', 'REMOVED']
 
 class Gossiper:
-    def __init__(self, node_id: int, state: str, message: str, fanout: int , repetitions: int, state_filepath: str, msg_queue):
+    def __init__(self, node_id: int, state: str, message: str, fanout: int , repetitions: int, state_filepath: str, msg_queue, middleware):
         self.logger = logging.getLogger(__name__)
         self.lock = threading.Lock()
         self.state_filepath = state_filepath
@@ -17,27 +17,40 @@ class Gossiper:
         self.message = message
         self.fanout = fanout
         self.repetitions = repetitions
+        self.middleware = middleware
     
     def _persist_state(self):
-        """Save the gossiper's state to a file."""
-        with self.lock:
+        """Save the gossiper's state to the state file."""
+        with self.lock:  # Ensure thread-safe access to the state file
             try:
-                with open(self.state_filepathpath, 'w') as file:
-                    json.dump({
-                        'state': self.state,
-                        'message': self.message,
-                        'fanout': self.fanout,
-                        'repetitions': self.repetitions
-                    }, file)
+                # Load the current state from the file
+                with open(self.state_filepath, 'r') as file:
+                    state_file = json.load(file)
+                
+                # Update this gossiper's state
+                state_file['gossipers'][str(self.node_id)] = {
+                    'state': self.state,
+                    'message': self.message,
+                    'fanout': self.fanout,
+                    'repetitions': self.repetitions
+                }
+
+                # Write the updated state back to the file
+                with open(self.state_filepath, 'w') as file:
+                    json.dump(state_file, file, indent=4)
+
                 self.logger.info(f"State persisted to {self.state_filepath}")
             except IOError as e:
                 self.logger.error(f"Failed to persist state: {e}")
     
     def _retrieve_fanout_nodes(self):
-        """A simple method that contacts Middleservice and retrieves a set of susceptible nodes.
-        """
-        # TODO: calls middleware.random_node_selection() and return a list of target node ids
-        pass
+        """A simple method that contacts the middleware for a list of nodes."""
+        try:
+            return self.middleware.get_random_fanout(self.node_id)
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve fanout nodes for node {self.node_id}: {e}")
+            # Handle the exception, for example, by retrying or performing some fallback operation
+
     
     def _serialize(self, target_id):
         """Encapsulates a message with its corresponding source and target nodes.
