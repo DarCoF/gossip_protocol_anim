@@ -32,11 +32,14 @@ class Projectile(Scene):
         # Add the projectile and the trace to the scene
         self.add(trace, projectile)
 
+        # Create start and end flash animations
+        self.add_sound("anim/laser_short.wav")
+
         # Define the movement of the projectile along a straight line
         straight_path = Line(self.start_obj.get_center(), self.end_obj.get_center())
 
         # Animate the projectile movement
-        self.play(MoveAlongPath(projectile, straight_path), run_time=0.75, rate_func=linear)
+        self.play(AnimationGroup(Flash(self.start_obj, color=WHITE, flash_radius=0.15, run_time=0.1), MoveAlongPath(projectile, straight_path), run_time=0.5, rate_func=linear))
 
 
 

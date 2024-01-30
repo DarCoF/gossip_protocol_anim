@@ -10,6 +10,7 @@ from manim import *
 from manim.utils.utils import slides_text
 from graph.graph import RandomGraph
 import logging
+from anim.proyectile import Projectile
 
 def is_subset(list_to_check, predefined_values):
     return set(list_to_check).issubset(set(predefined_values))
