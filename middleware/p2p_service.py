@@ -20,8 +20,8 @@ class P2PService:
         self.node_coordinates = graph.node_coordinates
         self.node_ids = graph.node_ids
         self.state_file_path = filepath
-        self.fanout = args[0]
-        self.repetitions = args[1]
+        self.fanout = 3
+        self.repetitions = 4
         self._state_file_lock = Lock()
         self._semaphore = Semaphore()
         self.message_queue = message_queue
@@ -32,9 +32,15 @@ class P2PService:
     def _create_state_file(self):
         """Creates original state file and loads it as dict.
         """
+        # Initialize the gossipers section with default data for each node
+        gossipers = {str(node_id): {'state': 'SUSCEPTIBLE',
+                                    'message': '',
+                                    'fanout': self.fanout,
+                                    'repetitions': self.repetitions}
+                     for node_id in self.node_ids}
         node_coordinates = ndarray_to_list(self.node_coordinates)
         self.state_file = {
-            'gossipers': {},  # Initialize as empty, not clear how it should be populated
+            'gossipers': gossipers,  # Initialize as empty, not clear how it should be populated
             'coordinates': node_coordinates,  # Use the coordinates from the constructor
             'adjacency_list': self.adjacency_list  # Use the adjacency list from the constructor
         }
