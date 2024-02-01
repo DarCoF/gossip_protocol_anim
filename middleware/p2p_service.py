@@ -20,12 +20,13 @@ class P2PService:
         self.node_coordinates = graph.node_coordinates
         self.node_ids = graph.node_ids
         self.state_file_path = filepath
-        self.fanout = 3
-        self.repetitions = 4
+        self.fanout = args[0]
+        self.repetitions = args[1]
         self._state_file_lock = Lock()
         self._semaphore = Semaphore()
         self.message_queue = message_queue
         if not os.path.exists(self.state_file_path) or not os.path.getsize(self.state_file_path) > 0:
+            print('HELLO')
             self._create_state_file() 
             self.state_file = self._load_state_file()
   
@@ -78,11 +79,11 @@ class P2PService:
         with self._semaphore:
             
             # Get the neighbors of the source node from the adjacency list
-            neighbors = self.adjacency_list.get(source_node_id, [])
+            neighbors = self.adjacency_list[source_node_id]
             
             # Filter the neighbors to include only those in SUSCEPTIBLE state
             susceptible_neighbors = [node for node in neighbors if self.state_file['gossipers'].get(str(node), {}).get('state') == 'SUSCEPTIBLE']
-            
+
             # Determine the number of nodes to sample
             num_to_sample = min(len(susceptible_neighbors), self.fanout)
             
@@ -128,8 +129,8 @@ class P2PService:
 
 
 
-graph = Graph2D(300, 5000)
+# graph = Graph2D(300, 5000)
 
-middleman = P2PService(graph, 'F:\\TheRabbitHole\\VlogDeUnNerd\\Video-15\\animations-code\\state_file', 0)
-print(middleman.state_file_path)
-print(middleman.state_file)
+# middleman = P2PService(graph, filepath='F:\\TheRabbitHole\\VlogDeUnNerd\\Video-15\\animations-code\\state_file.json', message_queue=0)
+# print(middleman.state_file_path)
+# print(middleman.state_file)

@@ -43,8 +43,3 @@ class Projectile(Scene):
 
 
 
-if __name__ == "__main__":
-    start_circle = Circle(radius=0.2, color=BLUE).move_to(LEFT * 4)
-    end_circle = Circle(radius=0.2, color=RED).move_to(RIGHT * 4)
-    scene = Projectile(start_circle, end_circle)
-    scene.render(preview=True)

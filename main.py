@@ -32,6 +32,7 @@ message_queue = queue.Queue()
 # Helper function
 def is_susceptible(node_status):
     if 'SUSCEPTIBLE' in node_status:
+        logging.info('---------SUSCEPTIBLE NODES LEFT--------------')
         return True
     else:
         return False
@@ -40,10 +41,10 @@ if __name__ == "__main__":
     # Instantiate starting graph
     graph = Graph2D(args.nodes, args.edges)
     # Bring middleware alive! Wake up princess.
-    middleservice = P2PService(graph, './', message_queue, args.fanout, args.repetitions)
+    middleservice = P2PService(graph, 'F:\\TheRabbitHole\\VlogDeUnNerd\\Video-15\\animations-code\\state_file.json', message_queue, args.fanout, args.repetitions)
     # Instantiate original gossiper
     message = 'Pim!!!'
-    seed = Gossiper(node_id= random.choice(graph.node_ids), message=message, fanout=args.fanout, repetitions=args.repetitions)
+    seed = Gossiper(node_id= random.choice(graph.node_ids), message=message, fanout=args.fanout, repetitions=args.repetitions, state = 'INFECTED', state_filepath=middleservice.state_file_path, middleware=middleservice, msg_queue=message_queue)
     # Draw starting graph
     graph.construct()
     # State file persisted by OG gossiper. Dump to dict and pass to redraw graph
@@ -57,10 +58,12 @@ if __name__ == "__main__":
 
     while is_susceptible(graph.node_status):
         # Bring threadmanager
-        thread_manager = ThreadManager(middleservice.state_file['gossipers'], middleservice.state_file_path, message_queue)
+        thread_manager = ThreadManager(middleservice, message_queue)
         thread_manager.start_event_loop()
 
         time.sleep(2)
+
+        logging.info(f"------------Reading Queue of messages--------")
 
         middleservice.read_queue()
 

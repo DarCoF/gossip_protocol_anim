@@ -2,6 +2,8 @@ import threading
 import logging
 import json
 import os
+import traceback
+import tempfile
 
 
 gossiper_states = ['SUSCEPTIBLE', 'INFECTED', 'REMOVED']
@@ -20,35 +22,50 @@ class Gossiper:
         self.middleware = middleware
     
     def _persist_state(self):
-        """Save the gossiper's state to the state file."""
-        with self.lock:  # Ensure thread-safe access to the state file
-            try:
-                # Load the current state from the file
+        """Save the gossiper's state to the state file in an atomic way."""
+        self.lock.acquire()
+        try:
+            # Read the existing state if the file isn't empty
+            if os.path.exists(self.state_filepath) and os.path.getsize(self.state_filepath) > 0:
                 with open(self.state_filepath, 'r') as file:
                     state_file = json.load(file)
-                
-                # Update this gossiper's state
-                state_file['gossipers'][str(self.node_id)] = {
-                    'state': self.state,
-                    'message': self.message,
-                    'fanout': self.fanout,
-                    'repetitions': self.repetitions
-                }
+            else:
+                state_file = {'gossipers': {}}
 
-                # Write the updated state back to the file
-                with open(self.state_filepath, 'w') as file:
-                    json.dump(state_file, file, indent=4)
+            # Update this gossiper's state
+            state_file['gossipers'][str(self.node_id)] = {
+                'state': self.state,
+                'message': self.message,
+                'fanout': self.fanout,
+                'repetitions': self.repetitions
+            }
 
-                self.logger.info(f"State persisted to {self.state_filepath}")
-            except IOError as e:
-                self.logger.error(f"Failed to persist state: {e}")
-    
+            # Write the updated state to a temporary file
+            fd, temp_file_path = tempfile.mkstemp(dir=os.path.dirname(self.state_filepath))
+            with os.fdopen(fd, 'w') as temp_file:
+                json.dump(state_file, temp_file, indent=4)
+
+            # Atomically rename the temporary file to the original filename
+            os.replace(temp_file_path, self.state_filepath)
+
+            self.logger.info(f"State persisted to {self.state_filepath}")
+
+        except json.JSONDecodeError as e:
+            self.logger.error(f"JSON decode error while reading state file: {e}")
+        except IOError as e:
+            self.logger.error(f"IO error while accessing state file: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error while persisting state: {e}")
+        finally:
+            self.lock.release()
+
     def _retrieve_fanout_nodes(self):
         """A simple method that contacts the middleware for a list of nodes."""
         try:
-            return self.middleware.get_random_fanout(self.node_id)
+            return self.middleware.get_random_fanout(source_node_id = int(self.node_id))
         except Exception as e:
             self.logger.error(f"Failed to retrieve fanout nodes for node {self.node_id}: {e}")
+            self.logger.error(traceback.format_exc()) 
             # Handle the exception, for example, by retrying or performing some fallback operation
 
     
@@ -61,12 +78,14 @@ class Gossiper:
         """Broadcasts the gossiper's message to a single node.
         """
         message = self._serialize(target_id)
-        with self.lock:
+        self.lock.acquire()
+        try:
             # Existing message sending logic goes here
             # After sending a message, persist the state
             self.msg_queue.put(message)
-            self._persist_state()
-        self.logger.info(f"Gossiper {self.node_id} added message to queue and persisted state")
+        finally:
+            self.lock.release()
+        self.logger.info(f"Gossiper {self.node_id} sent message to {target_id} and added it to queue")
 
     def udpate_state(self, new_state):
         """Swaps node state from the list of potential states under two conditions:
@@ -74,24 +93,13 @@ class Gossiper:
         - Node out of repetitions -> infected to removed
         """
         if self.repetitions == 0 and self.state == gossiper_states[1]:
-            self.state = new_state        
-        with self.lock:
-            # Existing state updating logic goes here
-            # After updating the state, persist the state
-            self._persist_state()
-            self.logger.info("State updated.")
+            self.state = new_state
 
     def _lower_rep_count(self):
         """Lower repetition count by 1 after each event cycle down until reaching 0.
         """
-        if self.lock:
-            if self.state == gossiper_states[1] and self.repetitions > 0:
-                self.repetitions -= 1
-
-        with self.lock:
-            # Existing repetition lowering logic goes here
-            # After lowering the count, persist the state
-            self._persist_state()
+        if self.state == gossiper_states[1] and self.repetitions > 0:
+            self.repetitions -= 1
             self.logger.info("Repetition count lowered.")
 
     def run(self):
@@ -99,12 +107,16 @@ class Gossiper:
         """
         fanout_node_ids = self._retrieve_fanout_nodes()
 
-        for node in range(len(fanout_node_ids)):
+        print(f'-----------------FANOUT NODES: {fanout_node_ids}---------------')
+
+        for node in fanout_node_ids:
             self.send_message(node)        
         
         self._lower_rep_count()
 
         if self.repetitions == 0:
             self.udpate_state(gossiper_states[2])
-        
-        self.logger.info(f"Gossiper {self.node_id} finished running")
+
+        self._persist_state()
+
+        return self.logger.info(f"Gossiper {self.node_id} finished running")

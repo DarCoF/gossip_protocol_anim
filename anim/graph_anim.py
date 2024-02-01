@@ -127,38 +127,38 @@ class Graph2D(Scene):
 
 
 
-if __name__ == "__main__":
-    config.pixel_height = 1080  # Set the pixel height of the output video 2160
-    config.pixel_width = 1920  # Set the pixel width of the output video 3840
-    config.media_dir = "F:\\TheRabbitHole\\VlogDeUnNerd\\animations-code\\video-15"
-    config.disable_caching = True
-    nodes = 200
-    edges = 400
-    print('Number of nodes {} and number of edges {}'.format(nodes, edges))
-    scene = Graph2D(n_nodes=nodes, n_edges=edges, is_directed=False)
-    scene.construct()
+# if __name__ == "__main__":
+#     config.pixel_height = 1080  # Set the pixel height of the output video 2160
+#     config.pixel_width = 1920  # Set the pixel width of the output video 3840
+#     config.media_dir = "F:\\TheRabbitHole\\VlogDeUnNerd\\animations-code\\video-15"
+#     config.disable_caching = True
+#     nodes = 200
+#     edges = 400
+#     print('Number of nodes {} and number of edges {}'.format(nodes, edges))
+#     scene = Graph2D(n_nodes=nodes, n_edges=edges, is_directed=False)
+#     scene.construct()
 
-    node_status = scene.node_status
-    node_status[0] = 'INFECTED'
-    node_status[7] = 'INFECTED'
-    node_status[15] = 'INFECTED'
-    node_status[20] = 'INFECTED'
-    node_status[100] = 'INFECTED'
-    node_status[23] = 'INFECTED'
-    node_status[199] = 'INFECTED'
-    node_status[10] = 'INFECTED'
-    node_status[63] = 'INFECTED'
-    node_status[150] = 'INFECTED'
+#     node_status = scene.node_status
+#     node_status[0] = 'INFECTED'
+#     node_status[7] = 'INFECTED'
+#     node_status[15] = 'INFECTED'
+#     node_status[20] = 'INFECTED'
+#     node_status[100] = 'INFECTED'
+#     node_status[23] = 'INFECTED'
+#     node_status[199] = 'INFECTED'
+#     node_status[10] = 'INFECTED'
+#     node_status[63] = 'INFECTED'
+#     node_status[150] = 'INFECTED'
 
-    scene.update_node_status(node_status)
-    scene.construct()
+#     scene.update_node_status(node_status)
+#     scene.construct()
 
-    node_status = scene.node_status
-    node_status[10] = 'REMOVED'
-    node_status[63] = 'REMOVED'
-    node_status[150] = 'REMOVED'
+#     node_status = scene.node_status
+#     node_status[10] = 'REMOVED'
+#     node_status[63] = 'REMOVED'
+#     node_status[150] = 'REMOVED'
 
-    scene.update_node_status(node_status)
-    scene.construct()
+#     scene.update_node_status(node_status)
+#     scene.construct()
 
-    scene.render(preview=True)
+#     scene.render(preview=True)
