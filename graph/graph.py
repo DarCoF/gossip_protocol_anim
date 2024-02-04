@@ -242,8 +242,20 @@ class RandomGraph:
         default_seed = 42  # Arbitrary number; you can choose any integer
         rng = np.random.default_rng(seed if seed is not None else default_seed)
 
-        # Generate random positions in the range [-3, 3) for each dimension
-        pos = rng.uniform(-3.5, 3.5, (len(self.graph), dim))
+    # Assuming the base is twice as wide as the height
+        width_range = (-6, 6)  # Base range: 7 units wide
+        height_range = (-3.5, 3.5)  # Height range: 3.5 units tall
+
+        # Generate random positions
+        # First dimension (width) has range width_range
+        # Second dimension (height) has range height_range
+        pos = np.column_stack((rng.uniform(*width_range, len(self.graph)),
+                            rng.uniform(*height_range, len(self.graph))))
+
+        # If more dimensions are needed, generate them within the height range
+        for _ in range(dim - 2):
+            pos = np.column_stack((pos, rng.uniform(*height_range, len(self.graph))))
+
         if center is not None:
             pos += center
 

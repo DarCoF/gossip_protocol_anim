@@ -37,7 +37,8 @@ class P2PService:
         gossipers = {str(node_id): {'state': 'SUSCEPTIBLE',
                                     'message': '',
                                     'fanout': self.fanout,
-                                    'repetitions': self.repetitions}
+                                    'repetitions': self.repetitions,
+                                    'parent_node': -1}
                      for node_id in self.node_ids}
         node_coordinates = ndarray_to_list(self.node_coordinates)
         self.state_file = {
@@ -54,10 +55,11 @@ class P2PService:
         with open(self.state_file_path, 'r') as f:
             return json.load(f)
     
-    def update_state_file(self, target_node_id: int, payload: str):
+    def update_state_file(self, target_node_id: int, source_node_id: int, payload: str):
         """Updates the state_file based on the target_node_id."""
         with self._state_file_lock:
-            node_id_str = str(target_node_id)  # Ensure the node ID is a string for JSON keys
+            node_id_str = str(target_node_id)
+            source_id_str = str(source_node_id)  # Ensure the node ID is a string for JSON keys
             if node_id_str not in self.state_file['gossipers']:
                 # Initialize the gossiper state if it doesn't exist
                 self.state_file['gossipers'][node_id_str] = {
@@ -67,8 +69,10 @@ class P2PService:
                     'repetitions': self.repetitions
                 }
             # Update the message for the gossiper
-            self.state_file['gossipers'][node_id_str]['message'] = payload
-            self.state_file['gossipers'][node_id_str]['state'] = 'INFECTED'
+            if not self.state_file['gossipers'][node_id_str]['state'] == 'INFECTED':
+                self.state_file['gossipers'][node_id_str]['message'] = payload
+                self.state_file['gossipers'][node_id_str]['state'] = 'INFECTED'
+                self.state_file['gossipers'][node_id_str]['parent_node'] = source_id_str
         
         # Write the updated state file to the specified path
         with open(self.state_file_path, 'w') as f:
@@ -120,7 +124,7 @@ class P2PService:
                 message, source_node_id, target_node_id = self._deserialize_message(message_data)
                 
                 # Update the state file based on the target node_id
-                self.update_state_file(target_node_id, message)
+                self.update_state_file(target_node_id, source_node_id, message)
             except self.message_queue.Empty:
                 break  # Exit if the queue is empty
             except Exception as e:

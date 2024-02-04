@@ -47,6 +47,7 @@ class Graph2D(Scene):
     def __init__(self,
         n_nodes: int, 
         n_edges: int, 
+        state_file: dict = {},
         is_directed: bool = False
         ):
         
@@ -57,6 +58,7 @@ class Graph2D(Scene):
         self.random_graph = RandomGraph(n_nodes, n_edges, is_directed)
         self.adjacency_list = self.random_graph.adjacency_list
         self.logger = logging.getLogger(__name__)
+        self.state_file = state_file
 
         if len(self.random_graph.get_nodes) > 0:
             self.node_status: list[str] = [NODE_STATUS[1] for _ in range(len(self.random_graph.get_nodes))]
@@ -92,21 +94,29 @@ class Graph2D(Scene):
             nonlocal cache_nodes
             self.logger.info(f"Start updating nodes. Chill...")
             node_animation = []
+            proyectiles = []
             diff_nodes = diff_arrays(self.node_status, cache_nodes) # Mask function -> Compares two lists of str and returns a binary list
             for i, mask in zip(self.node_ids, diff_nodes):
                 if mask == 1:
                     if cache_nodes[i] == NODE_STATUS[1]:
                         node_animation.append(self.nodes_2s[i].animate.set_style(fill_color=GREEN, fill_opacity=0.65, stroke_color ="#013220" , stroke_opacity=1))
+                        # Read the source node id from which the newly update node received the message from the state file
+                        node_id_start = int(self.state_file['gossipers'][str(self.node_ids[i])]['parent_node'])
+                        print(node_id_start, self.node_ids[i])
+                        proyectile = Projectile(self.node_coordinates[node_id_start], self.node_coordinates[self.node_ids[i]])
+                        self.add(proyectile.add_traces())
+                        proyectiles.append(proyectile.construct())
                     else: 
                         node_animation.append(self.nodes_2s[i].animate.set_style(fill_color=GREY, fill_opacity=0.65, stroke_color = "#343d46", stroke_opacity = 1))
-            self.play(AnimationGroup(*node_animation))
+            self.play(AnimationGroup(*node_animation, *proyectiles))
             cache_nodes = self.node_status.copy()
             self.logger.info(f"Finish updating nodes!")   
         return redraw_map
 
-    def update_node_status(self, update_node_status: list = []):        
+    def update_node_status(self, update_node_status: list = [], update_state_file: dict = {}):        
         if is_subset(update_node_status, ['SUSCEPTIBLE', 'INFECTED', 'REMOVED']) and len(update_node_status) == len(self.node_status):
             self.node_status = update_node_status
+            self.state_file = update_state_file
         else:
             raise ValueError('Updated node status list lenght does not match current node status lenght')
 

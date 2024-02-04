@@ -44,13 +44,14 @@ if __name__ == "__main__":
     middleservice = P2PService(graph, 'F:\\TheRabbitHole\\VlogDeUnNerd\\Video-15\\animations-code\\state_file.json', message_queue, args.fanout, args.repetitions)
     # Instantiate original gossiper
     message = 'Pim!!!'
-    seed = Gossiper(node_id= random.choice(graph.node_ids), message=message, fanout=args.fanout, repetitions=args.repetitions, state = 'INFECTED', state_filepath=middleservice.state_file_path, middleware=middleservice, msg_queue=message_queue)
+    node_og = random.choice(graph.node_ids)
+    seed = Gossiper(node_id= node_og, message=message, fanout=args.fanout, repetitions=args.repetitions, state = 'INFECTED', state_filepath=middleservice.state_file_path, middleware=middleservice, msg_queue=message_queue)
     # Draw starting graph
     graph.construct()
     # State file persisted by OG gossiper. Dump to dict and pass to redraw graph
-    middleservice.update_state_file(seed.node_id, message)
+    middleservice.update_state_file(seed.node_id, node_og, message)
     # Update graph with original gossiper
-    graph.update_node_status(ordered_list_from_dict(middleservice.state_file['gossipers']))
+    graph.update_node_status(ordered_list_from_dict(middleservice.state_file['gossipers']), middleservice.state_file)
     # Redraw graph
     graph.construct()
 
@@ -70,7 +71,7 @@ if __name__ == "__main__":
         node_status_i = ordered_list_from_dict(middleservice.state_file['gossipers'])
 
         # Update graph
-        graph.update_node_status(node_status_i)
+        graph.update_node_status(node_status_i, middleservice.state_file)
         graph.construct()
 
     graph.render(preview=True)

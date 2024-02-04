@@ -7,17 +7,14 @@ import numpy as np
 from manim import *
 import numpy as np
 
-class Projectile(Scene):
+class Projectile():
     def __init__(self, start_obj, end_obj, **kwargs):
         super().__init__(**kwargs)
         self.start_obj = start_obj
         self.end_obj = end_obj
+        self.projectile = Dot(color=WHITE, radius = 0.025)
 
-    def construct(self):
-        # Create the projectile
-        projectile = Dot(color=WHITE)
-        projectile.move_to(self.start_obj.get_center())
-
+    def add_traces(self):
         # Define the sinusoidal path function
         def sinusoidal_path(pos, amplitude=0.5, frequency=2, phase=0):
             # Apply a sinusoidal function to the y-coordinate
@@ -26,20 +23,19 @@ class Projectile(Scene):
 
         # Create a TracedPath with the sinusoidal path function
         # Using a lambda to make sure no arguments are passed
-        trace = TracedPath(lambda: sinusoidal_path(projectile.get_center(), amplitude=projectile.radius, frequency=4), 
+        trace = TracedPath(lambda: sinusoidal_path(self.projectile.get_center(), amplitude=self.projectile.radius, frequency=4), 
                            stroke_color=BLUE, stroke_width=2, stroke_opacity=[0.8, 0], dissipating_time=0.1)
+        return trace
 
-        # Add the projectile and the trace to the scene
-        self.add(trace, projectile)
-
-        # Create start and end flash animations
-        self.add_sound("anim/laser_short.wav")
-
+    def construct(self):
+        # Create the projectile
+        self.projectile.move_to(self.start_obj)
+        
         # Define the movement of the projectile along a straight line
-        straight_path = Line(self.start_obj.get_center(), self.end_obj.get_center())
+        straight_path = Line(self.start_obj, self.end_obj)
 
         # Animate the projectile movement
-        self.play(AnimationGroup(Flash(self.start_obj, color=WHITE, flash_radius=0.15, run_time=0.1), MoveAlongPath(projectile, straight_path), run_time=0.5, rate_func=linear))
+        return (AnimationGroup(Flash(self.start_obj, color=WHITE, flash_radius=0.15, run_time=0.1), MoveAlongPath(self.projectile, straight_path), run_time=0.5, rate_func=linear))
 
 
 
